@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch output="log">
+    <!--input arg-->
+    <arg name="urdf_file" default="$(find helpers_gpu_voxels)/urdf/kuka_kr10.urdf"/>
+
+    <!--launch node-->
+    <node  name="urdf_parser" pkg="helpers_gpu_voxels" type="urdf_parser" output="screen" required="true" >
+        <param name="urdf" value="$(arg urdf_file)" />
+    </node>
+</launch>

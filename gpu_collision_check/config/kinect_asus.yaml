@@ -1,0 +1,11 @@
+camera1:
+  translation: [-1.7, 0.55, 1.45]
+  rotation: [-1.75, 0, -1.5707]
+  frameName: "kinect1_depth_optical_frame"
+
+camera2:
+  translation: [1, 0, 1]
+  rotation: [-1.5707, 0, -1.5707]
+  frameName: "kinect2"
+
+targetFrameName: "base_link"

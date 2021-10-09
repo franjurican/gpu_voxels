@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- config args -->
+    <arg name="use_sim_time" default="false"/>
+    <arg name="use_gazebo" default="true"/>
+    <arg name="include_kuka" default="true"/>
+    <arg name="urdf_model" default="$(find kuka_kr10_gazebo)/urdf/kr10.xacro"/>
+    <arg name="gazebo_world" default="$(find gpu_collision_check)/worlds/two_kinects_kuka.world"/>
+    <arg name="config_kinects" default="$(find gpu_collision_check)/config/kinects_kuka.yaml"/>
+    <arg name="config_rviz" default="$(find gpu_collision_check)/config/two_kinects.rviz"/>
+
+    <!-- load kuka in gazebo -->
+    <group if="$(arg include_kuka)">
+        <remap from="/arm_controller/follow_joint_trajectory" to="/joint_trajectory_action"/>
+        <remap from="/arm_controller/state" to="/feedback_states"/>
+        <remap from="/arm_controller/command" to="/joint_path_command"/>
+
+        <!-- load kuka kr10 urdf -->
+        <param name="robot_description" command="$(find xacro)/xacro --inorder '$(arg urdf_model)'"/>
+
+        <!-- spawn kuka kr10 in gazebo -->
+        <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" output="screen" respawn="false"
+            args="-urdf -param robot_description -model kuka_kr10"/>
+
+        <!-- load controllers -->
+        <include file="$(find kuka_kr10_gazebo)/launch/kr10_control.launch"/>
+
+        <!--launch gazebo with two kinects-->
+        <include file="$(find gazebo_ros)/launch/empty_world.launch">
+            <arg name="world_name" value="$(arg gazebo_world)"/>
+        </include>
+    </group>
+
+    <group unless="$(arg include_kuka)">
+        <!--launch gazebo with two kinects-->
+        <include file="$(find gazebo_ros)/launch/empty_world.launch">
+            <arg name="world_name" value="$(arg gazebo_world)"/>
+        </include>
+    </group>
+
+    <!-- launch node for broadcasting TF -->
+    <include file="$(find gpu_collision_check)/launch/tf_broadcaster.launch">
+        <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+        <arg name="config_kinects" value="$(arg config_kinects)"/>
+        <arg name="config_rviz" value="$(arg config_rviz)"/>
+    </include>
+
+    <!-- launch node for merging pointclouds -->
+    <!-- <node name="mergeKinects" pkg="gpu_collision_check" type="merge_kinects" output="screen"/> -->
+</launch>

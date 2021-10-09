@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- arg for config-->
+    <arg name="use_sim_time" default="true"/>
+    <arg name="config_kinects" default="$(find gpu_collision_check)/config/kinect_asus.yaml"/>
+    <arg name="config_rviz" default="$(find gpu_collision_check)/config/kinect_asus_rosbag.rviz"/>
+
+    <!-- use clock topic (for rosbag) -->
+    <group if="$(arg use_sim_time)">
+        <rosparam param="use_sim_time">true</rosparam>
+    </group>
+
+    <!-- launch tf broadcaster -->
+    <node name="kinectsTfBroadcaster" pkg="gpu_collision_check" type="broadcast_kinect_TF" output="screen">
+        <rosparam file="$(arg config_kinects)" command="load"/>
+    </node>
+
+    <!-- rviz-->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg config_rviz)"/> 
+</launch>

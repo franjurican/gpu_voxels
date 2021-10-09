@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<launch>
+  <!--+++++++++++ IMPORTANT ARGUMENTS ++++++++++-->
+  <arg name="remap" default="true"/> <!-- remap action server topics -->
+  <arg name="action_server_name" default="/joint_trajectory_action"/> <!-- ROS-I standard for action server name -->
+  <arg name="fake_execution_set" default="false"/> <!-- fake execution dosen't connect MoveIt to robot controllers -->
+
+  <!-- Gazebo -->
+  <arg name="paused_gazebo" default="false"/>
+  <arg name="gui_gazebo" default="true"/>
+  <arg name="gazebo_world" default="worlds/empty.world"/> <!--default="$(find gpu_collision_check)/worlds/two_kinects.world"/>-->
+  <arg name="urdf_model" default="$(find kuka_kr10_gazebo)/urdf/kr10.xacro"/> <!-- path to urdf model (xacro script!)-->
+  <arg name="load_robot_controllers" default="$(find kuka_kr10_gazebo)/launch/kr10_control.launch"/> <!-- path to .launch file for loading robot controllers -->
+
+  <!-- state publisher -->
+  <arg name="use_gui_joint_state_pub" default="false"/> 
+
+  <!-- MoveIt -->
+  <arg name="moveit_config_pkg" default="$(find moveit_kuka)"/> <!-- "$(find moveit_kuka)" -->
+  <arg name="allow_trajectory_execution_set" default="true"/> <!-- if fake_execution_set=true -> robot is moving only in RViz (simulation) -->
+  <arg name="info_planning" default="true"/> <!-- show planning info in terminal -->
+  <arg name="max_safe_path_cost_set" default="1"/>
+  <arg name="jiggle_fraction_set" default="0.05"/>
+
+  <!-- RViz -->
+  <arg name="config_load" default="true"/> <!-- RViz with loaded MoveIt plugin -->
+
+
+  <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+  <!--|                       GAZEBO                      |-->
+  <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+
+  <!-- remap topics to conform to ROS-I specifications -->
+  <group if="$(arg remap)">
+    <remap from="/arm_controller/follow_joint_trajectory" to="$(arg action_server_name)"/>
+    <remap from="/arm_controller/state" to="/feedback_states"/>
+    <remap from="/arm_controller/command" to="/joint_path_command"/>
+    <!-- get robot movement in RViz even if using fake controller -->
+    <remap from="/joint_states" to="/gazebo_robot_simulation/joint_states"/>
+
+    <!-- startup simulated world -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+      <arg name="world_name" value="$(arg gazebo_world)"/>
+      <arg name="gui" value="$(arg gui_gazebo)"/>
+      <arg name="paused" value="$(arg paused_gazebo)"/>
+    </include>
+  </group>
+
+  <!-- startup simulated world if $(arg remap)=false -->
+  <group unless="$(arg remap)">
+    <!-- get robot movement in RViz even if using fake controller -->
+    <remap from="/joint_states" to="/gazebo_robot_simulation/joint_states"/>
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+      <arg name="world_name" value="$(arg gazebo_world)"/>
+      <arg name="gui" value="$(arg gui_gazebo)"/>
+      <arg name="paused" value="$(arg paused_gazebo)"/>
+    </include>
+  </group>
+    
+  <!-- load kuka kr10 urdf -->
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(arg urdf_model)'"/>
+
+  <!-- spawn kuka kr10 in gazebo -->
+  <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" output="screen" respawn="false"
+        args="-urdf -param robot_description -model kuka_kr10 -x 0.0 -y 0.0 -z 0.0 -R 0.0 -P 0.0 -Y 0.0"/>
+
+  <!-- start Gazebo ros_control interface (load controllers) -->
+  <include file="$(arg load_robot_controllers)"/>
+
+  <!-- convert joint states to TF transforms for rviz, etc -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+
+
+  <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+  <!--|                       MoveIt                      |-->
+  <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+
+  <!-- load the URDF, SRDF and other .yaml configuration files on the param server -->
+  <include file="$(arg moveit_config_pkg)/launch/planning_context.launch">
+    <arg name="load_robot_description" value="true"/>
+  </include>
+
+  <!-- if we have a robot connected in Gazebo, publish joint states from Gazebo - else take output from fake controller -->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="use_gui" value="$(arg use_gui_joint_state_pub)"/>
+    <rosparam param="source_list" unless="$(arg fake_execution_set)">[gazebo_robot_simulation/joint_states]</rosparam>
+    <rosparam param="source_list" if="$(arg fake_execution_set)">[move_group/fake_controller_joint_states]</rosparam>
+  </node>
+  
+  <!-- run the main MoveIt! executable and remap topics to ROS-I if $(arg remap)=true -->
+  <group if="$(arg remap)">
+    <remap from="/arm_controller/follow_joint_trajectory" to="$(arg action_server_name)"/>
+    <include file="$(arg moveit_config_pkg)/launch/move_group.launch">
+      <arg name="allow_trajectory_execution" value="$(arg allow_trajectory_execution_set)"/>
+      <arg name="fake_execution" value="$(arg fake_execution_set)"/>
+      <arg name="info" value="$(arg info_planning)"/>
+      <arg name="max_safe_path_cost" value="$(arg max_safe_path_cost_set)"/>
+      <arg name="jiggle_fraction" default="$(arg jiggle_fraction_set)"/>
+    </include>
+  </group>
+
+  <!-- run the main MoveIt! executable if $(arg remap)=false -->
+  <group unless="$(arg remap)">
+    <include file="$(arg moveit_config_pkg)/launch/move_group.launch">
+      <arg name="allow_trajectory_execution" value="$(arg allow_trajectory_execution_set)"/>
+      <arg name="fake_execution" value="$(arg fake_execution_set)"/>
+      <arg name="info" value="$(arg info_planning)"/>
+      <arg name="max_safe_path_cost" value="$(arg max_safe_path_cost_set)"/>
+      <arg name="jiggle_fraction" default="$(arg jiggle_fraction_set)"/>
+    </include>
+  </group>
+
+  <!-- run Rviz  -->
+  <include file="$(arg moveit_config_pkg)/launch/moveit_rviz.launch">
+    <arg name="config" value="$(arg config_load)"/>
+  </include>
+
+</launch>

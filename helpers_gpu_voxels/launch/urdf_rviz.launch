@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="file_location" default="$(find helpers_gpu_voxels)/urdf/kuka_kr10.urdf"/>
+
+    <!-- robot description - URDF-->
+    <param name="robot_description" textfile="$(arg file_location)"/>
+
+    <!-- joint pub-->
+    <node name="joint_pub" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui"/>
+    
+    <!-- robot state -->
+    <node name="robot_state" pkg="robot_state_publisher" type="state_publisher" /> 
+
+    <!-- rviz-->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find helpers_gpu_voxels)/config/urdf_gui.rviz" required="true"/>
+</launch>

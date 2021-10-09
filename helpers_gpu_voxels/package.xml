@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <!-- package info -->
+  <name>helpers_gpu_voxels</name>
+  <version>0.0.0</version>
+  <description>The helpers_gpu_voxels package</description>
+
+  <!-- author and maintainer -->
+  <maintainer email="fran.jurican@fer.hr"> Fran Jurican </maintainer>
+
+  <!-- license -->
+  <license>TODO</license>
+
+  <!-- dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>urdf</build_depend>
+
+  <build_export_depend>roscpp</build_export_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>urdf</exec_depend>
+  
+</package>

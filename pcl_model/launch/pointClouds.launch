@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<launch>   
+    <!-- arg for config-->
+    <arg name="bag" default="/home/franjurican/Downloads/calib_motion_without_tool.bag"/>
+    <arg name="urdf_model" default="$(find kuka_kr10_gazebo)/urdf/kr10.xacro"/>
+    
+    <!-- use clock topic (for rosbag) -->
+    <rosparam param="use_sim_time">true</rosparam>
+
+    <!-- rosbag -->
+    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg bag)"/>
+
+    <!-- load kuka kr10 urdf -->
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(arg urdf_model)'"/>
+
+    <!-- state publisher -->
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"/>
+
+    <!-- robot state -->
+    <node name="robot_state" pkg="robot_state_publisher" type="state_publisher" /> 
+
+    <!-- rviz-->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find helpers_gpu_voxels)/config/urdf_gui.rviz" required="true"/>
+</launch>
